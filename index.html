@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUDU'S HOUSE ASSET PLANER </title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Pretendard:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root {
+    --bg: #0d0f14; --bg2: #13161e; --bg3: #1a1e28;
+    --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0; --text2: #8b8fa8; --text3: #555870;
+    --accent: #4f8ef7; --green: #3ecf8e; --amber: #f5a623; --red: #f06e6e;
+    --mono: 'DM Mono', monospace; --sans: 'Pretendard', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); padding-bottom: 80px; }
+  .page { max-width: 1400px; margin: 0 auto; padding: 30px 20px; }
+  .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+  
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+  .s-card { background: var(--bg2); border: 1px solid var(--border); padding: 18px; border-radius: 16px; }
+  .s-label { font-size: 11px; color: var(--text3); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
+  .s-value { font-size: 20px; font-family: var(--mono); font-weight: 500; color: var(--text); }
+  .s-sub { font-size: 11px; margin-top: 5px; color: var(--text2); }
+
+  .year-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+  .tab-btn { background: var(--bg2); border: 1px solid var(--border); color: var(--text2); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-family: var(--mono); font-size: 13px; }
+  .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  .grid-main { display: grid; grid-template-columns: 1fr 320px; gap: 20px; margin-bottom: 20px; }
+  @media (max-width: 1000px) { .grid-main { grid-template-columns: 1fr; } }
+
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 20px; position: relative; }
+  .card-title { font-size: 13px; color: var(--text3); margin-bottom: 15px; font-weight: 600; text-transform: uppercase; }
+
+  .table-wrap { overflow: auto; max-height: 400px; border-radius: 12px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--bg3); color: var(--text3); padding: 12px; position: sticky; top: 0; text-align: left; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+
+  input, select, textarea { background: var(--bg3); border: 1px solid var(--border2); color: var(--text); padding: 8px; border-radius: 6px; font-family: var(--mono); outline: none; width: 100%; }
+  textarea { resize: none; font-family: var(--sans); font-size: 13px; line-height: 1.6; color: var(--text); }
+
+  .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-ghost { background: var(--bg3); color: var(--text2); border: 1px solid var(--border2); }
+</style>
+</head>
+<body>
+  <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 20px;">
+        <button onclick="exportData()" style="padding: 8px 16px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text); border-radius: 6px; cursor: pointer; font-size: 13px;">
+            📥 데이터 내보내기 (JSON)
+        </button>
+        <button onclick="document.getElementById('importFile').click()" style="padding: 8px 16px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text); border-radius: 6px; cursor: pointer; font-size: 13px;">
+            📤 데이터 불러오기 (JSON)
+        </button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+<div class="page">
+  <div class="header-flex">
+    <h2 style="font-size: 20px;">DUDU'S HOUSE ASSET Dashboard <span id="view-year-label" style="color:var(--accent)">ALL</span></h2>
+    <button class="btn btn-ghost" style="color:var(--red)" onclick="resetData()">전체 초기화</button>
+  </div>
+
+  <div class="summary-grid">
+<div class="s-card">
+  <div class="s-label">최종 목표 달성률</div>
+  <div class="s-value" id="s-goal-progress" style="color:var(--accent)">0%</div>
+  <div class="s-sub" id="s-goal-remain">최종 목표까지 -</div>
+</div>
+    <div class="s-card"><div class="s-label">총 자산</div><div class="s-value" id="s-total">0</div><div class="s-sub" id="s-total-sub">-</div></div>
+    <div class="s-card"><div class="s-label">지난 기록 대비 변동</div><div class="s-value" id="s-change-rate">0%</div><div class="s-sub" id="s-change-abs">0 만원</div></div>
+    <div class="s-card"><div class="s-label">필요 연 수익률</div><div class="s-value" id="s-req-yield" style="color:var(--amber)">0%</div><div class="s-sub">2033년 도달 기준</div></div>
+    <div class="s-card"><div class="s-label">월 현금흐름 (4%)</div><div class="s-value" id="s-cashflow" style="color:var(--green)">0</div><div class="s-sub">은퇴 시 인출 가능액</div></div>
+    <div class="s-card"><div class="s-label">리밸런싱</div><div class="s-value" id="s-status">정상</div><div class="s-sub" id="s-status-sub">-</div></div>
+  </div>
+
+  <div class="year-tabs" id="yearTabs">
+    <button class="tab-btn active" onclick="setYear('ALL', this)">ALL</button>
+  </div>
+
+  <div class="grid-main">
+    <div class="card">
+      <div class="card-title">성장 시각화</div>
+      <div style="height: 380px;"><canvas id="mainChart"></canvas></div>
+    </div>
+    <div class="card" style="display: flex; flex-direction: column;">
+      <div class="card-title">포트폴리오 비중</div>
+      <div style="flex: 1; min-height: 200px;"><canvas id="pieChart"></canvas></div>
+      <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">
+        <label style="font-size:11px; color:var(--text3)">리밸런싱 타겟 / 임계치(%)</label>
+        <div style="display:flex; gap:5px; margin-top:5px;">
+          <select id="cfg-target" onchange="saveCfg()" style="flex:1"></select>
+          <input type="number" id="cfg-threshold" step="0.1" style="width:70px;" oninput="saveCfg()">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-main">
+    <div class="card">
+        <div class="card-title">데이터 기록</div>
+        <div class="table-wrap"><table><thead id="table-head"></thead><tbody id="table-body"></tbody></table></div>
+        <div style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; border-top:1px solid var(--border); padding-top:20px;">
+          <div style="width:140px;"><label style="display:block; font-size:11px; color:var(--text3); margin-bottom:5px;">기록 날짜</label><input type="date" id="in-date"></div>
+          <div id="in-values" style="display:flex; gap:8px; flex:1;"></div>
+          <button class="btn btn-primary" onclick="addRow()">기록 추가</button>
+        </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="card">
+            <div class="card-title">보유 종목 관리</div>
+            <div id="ticker-list" style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:12px;"></div>
+            <div style="display:flex; gap:5px;"><input type="text" id="new-ticker" style="text-transform:uppercase" placeholder="TICKER"><button class="btn btn-primary" onclick="addTicker()">추가</button></div>
+        </div>
+        <div class="card" style="flex: 1;">
+            <div class="card-title">Investment Principle</div>
+            <textarea id="memo-area" style="height: 250px;" placeholder="투자 원칙이나 전략을 기록하세요..." oninput="saveMemo()"></textarea>
+        </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const GOAL_DATA = [
+    {date:'2025-10-05', val:49007}, {date:'2025-10-12', val:49439}, {date:'2025-10-19', val:49573}, {date:'2025-10-26', val:49707}, 
+    {date:'2025-11-02', val:49841}, {date:'2025-11-09', val:49975}, {date:'2025-11-16', val:50110}, {date:'2025-11-23', val:50246}, {date:'2025-11-30', val:50381}, 
+    {date:'2025-12-07', val:50517}, {date:'2025-12-14', val:50654}, {date:'2025-12-21', val:50790}, {date:'2025-12-28', val:62438}, 
+    {date:'2026-01-04', val:62634}, {date:'2026-01-11', val:62829}, {date:'2026-01-18', val:63026}, {date:'2026-01-25', val:63222}, 
+    {date:'2026-02-01', val:63420}, {date:'2026-02-08', val:63617}, {date:'2026-02-15', val:63815}, {date:'2026-02-22', val:64013}, 
+    {date:'2026-03-01', val:64212}, {date:'2026-03-08', val:64411}, {date:'2026-03-15', val:64610}, {date:'2026-03-22', val:64810}, {date:'2026-03-29', val:65010}, 
+    {date:'2026-04-05', val:65211}, {date:'2026-04-12', val:65412}, {date:'2026-04-19', val:65614}, {date:'2026-04-26', val:65816}, 
+    {date:'2026-05-03', val:66018}, {date:'2026-05-10', val:66221}, {date:'2026-05-17', val:66816}, {date:'2026-05-24', val:76647}, {date:'2026-05-31', val:76871}, 
+    {date:'2026-06-07', val:77096}, {date:'2026-06-14', val:77321}, {date:'2026-06-21', val:77546}, {date:'2026-06-28', val:81772}, 
+    {date:'2026-07-05', val:82006}, {date:'2026-07-12', val:82241}, {date:'2026-07-19', val:82477}, {date:'2026-07-26', val:82712}, 
+    {date:'2026-08-02', val:82949}, {date:'2026-08-09', val:83185}, {date:'2026-08-16', val:83423}, {date:'2026-08-23', val:83660}, {date:'2026-08-30', val:83898}, 
+    {date:'2026-09-06', val:84137}, {date:'2026-09-13', val:84376}, {date:'2026-09-20', val:84616}, {date:'2026-09-27', val:84856}, 
+    {date:'2026-10-04', val:85096}, {date:'2026-10-11', val:85337}, {date:'2026-10-18', val:85579}, {date:'2026-10-25', val:85821}, 
+    {date:'2026-11-01', val:86063}, {date:'2026-11-08', val:86306}, {date:'2026-11-15', val:86550}, {date:'2026-11-22', val:86794}, {date:'2026-11-29', val:87038}, 
+    {date:'2026-12-06', val:87283}, {date:'2026-12-13', val:87529}, {date:'2026-12-20', val:87775}, {date:'2026-12-27', val:88021}, 
+    {date:'2027-01-03', val:88268}, {date:'2027-01-10', val:88515}, {date:'2027-01-17', val:90763}, {date:'2027-01-24', val:91016}, {date:'2027-01-31', val:91269}, 
+    {date:'2027-02-07', val:91522}, {date:'2027-02-14', val:91776}, {date:'2027-02-21', val:92031}, {date:'2027-02-28', val:92286}, 
+    {date:'2027-03-07', val:92541}, {date:'2027-03-14', val:92797}, {date:'2027-03-21', val:93054}, {date:'2027-03-28', val:93311}, 
+    {date:'2027-04-04', val:93568}, {date:'2027-04-11', val:93826}, {date:'2027-04-18', val:94085}, {date:'2027-04-25', val:94344}, 
+    {date:'2027-05-02', val:94604}, {date:'2027-05-09', val:94864}, {date:'2027-05-16', val:100124}, {date:'2027-05-23', val:100396}, {date:'2027-05-30', val:100668}, 
+    {date:'2027-06-06', val:100940}, {date:'2027-06-13', val:101213}, {date:'2027-06-20', val:101486}, {date:'2027-06-27', val:101760}, 
+    {date:'2027-07-04', val:102035}, {date:'2027-07-11', val:102310}, {date:'2027-07-18', val:102585}, {date:'2027-07-25', val:102862}, 
+    {date:'2027-08-01', val:103138}, {date:'2027-08-08', val:103416}, {date:'2027-08-15', val:103694}, {date:'2027-08-22', val:103972}, {date:'2027-08-29', val:104251}, 
+    {date:'2027-09-05', val:104531}, {date:'2027-09-12', val:104811}, {date:'2027-09-19', val:105091}, {date:'2027-09-26', val:105373}, 
+    {date:'2027-10-03', val:105654}, {date:'2027-10-10', val:105937}, {date:'2027-10-17', val:106220}, {date:'2027-10-24', val:106503}, {date:'2027-10-31', val:106787}, 
+    {date:'2027-11-07', val:107072}, {date:'2027-11-14', val:107357}, {date:'2027-11-21', val:107643}, {date:'2027-11-28', val:107929}, 
+    {date:'2027-12-05', val:108216}, {date:'2027-12-12', val:108504}, {date:'2027-12-19', val:108792}, {date:'2027-12-26', val:109080}, 
+    {date:'2028-01-02', val:109370}, {date:'2028-01-09', val:109659}, {date:'2028-01-16', val:109950}, {date:'2028-01-23', val:112241}, {date:'2028-01-30', val:112537}, 
+    {date:'2028-02-06', val:112833}, {date:'2028-02-13', val:113129}, {date:'2028-02-20', val:113427}, {date:'2028-02-27', val:113725}, 
+    {date:'2028-03-05', val:114023}, {date:'2028-03-12', val:114323}, {date:'2028-03-19', val:114622}, {date:'2028-03-26', val:114923}, 
+    {date:'2028-04-02', val:115224}, {date:'2028-04-09', val:115525}, {date:'2028-04-16', val:115828}, {date:'2028-04-23', val:116130}, {date:'2028-04-30', val:116434}, 
+    {date:'2028-05-07', val:116738}, {date:'2028-05-14', val:117043}, {date:'2028-05-21', val:117348}, {date:'2028-05-28', val:117654}, 
+    {date:'2028-06-04', val:117960}, {date:'2028-06-11', val:118267}, {date:'2028-06-18', val:118575}, {date:'2028-06-25', val:118883}, 
+    {date:'2028-07-02', val:119192}, {date:'2028-07-09', val:119502}, {date:'2028-07-16', val:119812}, {date:'2028-07-23', val:120123}, {date:'2028-07-30', val:120434}, 
+    {date:'2028-08-06', val:120746}, {date:'2028-08-13', val:121059}, {date:'2028-08-20', val:121372}, {date:'2028-08-27', val:121686}, 
+    {date:'2028-09-03', val:122001}, {date:'2028-09-10', val:122316}, {date:'2028-09-17', val:122632}, {date:'2028-09-24', val:122949}, 
+    {date:'2028-10-01', val:123266}, {date:'2028-10-08', val:123583}, {date:'2028-10-15', val:123902}, {date:'2028-10-22', val:124221}, {date:'2028-10-29', val:124541}, 
+    {date:'2028-11-05', val:124861}, {date:'2028-11-12', val:125182}, {date:'2028-11-19', val:125503}, {date:'2028-11-26', val:125826}, 
+    {date:'2028-12-03', val:126149}, {date:'2028-12-10', val:126472}, {date:'2028-12-17', val:126796}, {date:'2028-12-24', val:127121}, {date:'2028-12-31', val:127447}, 
+    {date:'2029-01-07', val:127773}, {date:'2029-01-14', val:128100}, {date:'2029-01-21', val:128427}, {date:'2029-01-28', val:128755}, 
+    {date:'2029-02-04', val:129084}, {date:'2029-02-11', val:129414}, {date:'2029-02-18', val:129744}, {date:'2029-02-25', val:130075}, 
+    {date:'2029-03-04', val:130406}, {date:'2029-03-11', val:130738}, {date:'2029-03-18', val:131071}, {date:'2029-03-25', val:131404}, 
+    {date:'2029-04-01', val:131738}, {date:'2029-04-08', val:132073}, {date:'2029-04-15', val:132409}, {date:'2029-04-22', val:132745}, {date:'2029-04-29', val:133082}, 
+    {date:'2029-05-06', val:133419}, {date:'2029-05-13', val:133757}, {date:'2029-05-20', val:134096}, {date:'2029-05-27', val:134436}, 
+    {date:'2029-06-03', val:134776}, {date:'2029-06-10', val:135117}, {date:'2029-06-17', val:135458}, {date:'2029-06-24', val:135801}, 
+    {date:'2029-07-01', val:136144}, {date:'2029-07-08', val:136487}, {date:'2029-07-15', val:136832}, {date:'2029-07-22', val:137177}, {date:'2029-07-29', val:137522}, 
+    {date:'2029-08-05', val:137869}, {date:'2029-08-12', val:138216}, {date:'2029-08-19', val:138564}, {date:'2029-08-26', val:138912}, 
+    {date:'2029-09-02', val:139261}, {date:'2029-09-09', val:139611}, {date:'2029-09-16', val:139962}, {date:'2029-09-23', val:140313}, {date:'2029-09-30', val:140665}, 
+    {date:'2029-10-07', val:141018}, {date:'2029-10-14', val:141372}, {date:'2029-10-21', val:141726}, {date:'2029-10-28', val:142081}, 
+    {date:'2029-11-04', val:142436}, {date:'2029-11-11', val:142792}, {date:'2029-11-18', val:143149}, {date:'2029-11-25', val:143507}, 
+    {date:'2029-12-02', val:143866}, {date:'2029-12-09', val:144225}, {date:'2029-12-16', val:144585}, {date:'2029-12-23', val:144945}, {date:'2029-12-30', val:145307}, 
+    {date:'2030-01-06', val:145669}, {date:'2030-01-13', val:146032}, {date:'2030-01-20', val:146395}, {date:'2030-01-27', val:146759}, 
+    {date:'2030-02-03', val:147124}, {date:'2030-02-10', val:147490}, {date:'2030-02-17', val:147856}, {date:'2030-02-24', val:148224}, 
+    {date:'2030-03-03', val:148592}, {date:'2030-03-10', val:148960}, {date:'2030-03-17', val:149330}, {date:'2030-03-24', val:149700}, {date:'2030-03-31', val:150071}, 
+    {date:'2030-04-07', val:150442}, {date:'2030-04-14', val:150815}, {date:'2030-04-21', val:151188}, {date:'2030-04-28', val:151562}, 
+    {date:'2030-05-05', val:151936}, {date:'2030-05-12', val:152312}, {date:'2030-05-19', val:152688}, {date:'2030-05-26', val:153065}, 
+    {date:'2030-06-02', val:153443}, {date:'2030-06-09', val:153821}, {date:'2030-06-16', val:154200}, {date:'2030-06-23', val:154580}, {date:'2030-06-30', val:154961}, 
+    {date:'2030-07-07', val:155342}, {date:'2030-07-14', val:155724}, {date:'2030-07-21', val:156107}, {date:'2030-07-28', val:156491}, 
+    {date:'2030-08-04', val:156876}, {date:'2030-08-11', val:157261}, {date:'2030-08-18', val:157647}, {date:'2030-08-25', val:158034}, 
+    {date:'2030-09-01', val:158422}, {date:'2030-09-08', val:158810}, {date:'2030-09-15', val:159199}, {date:'2030-09-22', val:159589}, {date:'2030-09-29', val:159980}, 
+    {date:'2030-10-06', val:160372}, {date:'2030-10-13', val:160764}, {date:'2030-10-20', val:161157}, {date:'2030-10-27', val:161551}, 
+    {date:'2030-11-03', val:161946}, {date:'2030-11-10', val:162341}, {date:'2030-11-17', val:162738}, {date:'2030-11-24', val:163135}, {date:'2030-12-01', val:163533}, 
+    {date:'2030-12-08', val:163931}, {date:'2030-12-15', val:164331}, {date:'2030-12-22', val:164731}, {date:'2030-12-29', val:165132}, 
+    {date:'2031-01-05', val:165534}, {date:'2031-01-12', val:165937}, {date:'2031-01-19', val:166340}, {date:'2031-01-26', val:166745}, 
+    {date:'2031-02-02', val:167150}, {date:'2031-02-09', val:167556}, {date:'2031-02-16', val:167963}, {date:'2031-02-23', val:168370}, 
+    {date:'2031-03-02', val:168779}, {date:'2031-03-09', val:169188}, {date:'2031-03-16', val:169598}, {date:'2031-03-23', val:170009}, {date:'2031-03-30', val:170421}, 
+    {date:'2031-04-06', val:170833}, {date:'2031-04-13', val:171247}, {date:'2031-04-20', val:171661}, {date:'2031-04-27', val:172076}, 
+    {date:'2031-05-04', val:172492}, {date:'2031-05-11', val:172908}, {date:'2031-05-18', val:173326}, {date:'2031-05-25', val:173744}, 
+    {date:'2031-06-01', val:174164}, {date:'2031-06-08', val:174584}, {date:'2031-06-15', val:175005}, {date:'2031-06-22', val:175426}, {date:'2031-06-29', val:175849}, 
+    {date:'2031-07-06', val:176272}, {date:'2031-07-13', val:176697}, {date:'2031-07-20', val:177122}, {date:'2031-07-27', val:177548}, 
+    {date:'2031-08-03', val:177975}, {date:'2031-08-10', val:178402}, {date:'2031-08-17', val:178831}, {date:'2031-08-24', val:179260}, {date:'2031-08-31', val:179691}, 
+    {date:'2031-09-07', val:180122}, {date:'2031-09-14', val:180554}, {date:'2031-09-21', val:180987}, {date:'2031-09-28', val:181421}, 
+    {date:'2031-10-05', val:181855}, {date:'2031-10-12', val:182291}, {date:'2031-10-19', val:182727}, {date:'2031-10-26', val:183165}, 
+    {date:'2031-11-02', val:183603}, {date:'2031-11-09', val:184042}, {date:'2031-11-16', val:184482}, {date:'2031-11-23', val:184923}, {date:'2031-11-30', val:185364}, 
+    {date:'2031-12-07', val:185807}, {date:'2031-12-14', val:186250}, {date:'2031-12-21', val:186695}, {date:'2031-12-28', val:187140}, 
+    {date:'2032-01-04', val:187586}, {date:'2032-01-11', val:188033}, {date:'2032-01-18', val:188481}, {date:'2032-01-25', val:188930}, 
+    {date:'2032-02-01', val:189380}, {date:'2032-02-08', val:189830}, {date:'2032-02-15', val:190282}, {date:'2032-02-22', val:190734}, {date:'2032-02-29', val:191188}, 
+    {date:'2032-03-07', val:191642}, {date:'2032-03-14', val:192097}, {date:'2032-03-21', val:192553}, {date:'2032-03-28', val:193010}, 
+    {date:'2032-04-04', val:193468}, {date:'2032-04-11', val:193927}, {date:'2032-04-18', val:194387}, {date:'2032-04-25', val:194848}, 
+    {date:'2032-05-02', val:195309}, {date:'2032-05-09', val:195772}, {date:'2032-05-16', val:196235}, {date:'2032-05-23', val:196700}, {date:'2032-05-30', val:197165}, 
+    {date:'2032-06-06', val:197631}, {date:'2032-06-13', val:198099}, {date:'2032-06-20', val:198567}, {date:'2032-06-27', val:199036}, 
+    {date:'2032-07-04', val:199506}, {date:'2032-07-11', val:199977}, {date:'2032-07-18', val:200449}, {date:'2032-07-25', val:200922}, 
+    {date:'2032-08-01', val:201396}, {date:'2032-08-08', val:201871}, {date:'2032-08-15', val:202346}, {date:'2032-08-22', val:202823}, {date:'2032-08-29', val:203301}, 
+    {date:'2032-09-05', val:203779}, {date:'2032-09-12', val:204259}, {date:'2032-09-19', val:204740}, {date:'2032-09-26', val:205221}, 
+    {date:'2032-10-03', val:205704}, {date:'2032-10-10', val:206187}, {date:'2032-10-17', val:206671}, {date:'2032-10-24', val:207157}, {date:'2032-10-31', val:207643}, 
+    {date:'2032-11-07', val:208131}, {date:'2032-11-14', val:208619}, {date:'2032-11-21', val:209108}, {date:'2032-11-28', val:209599}, 
+    {date:'2032-12-05', val:210090}, {date:'2032-12-12', val:210582}
+];
+
+let TICKERS = JSON.parse(localStorage.getItem('tk_v2.0')) || ['TSLA','QQQ','QLD','VOO','CASH'];
+let ROWS = JSON.parse(localStorage.getItem('rw_v2.0')) || [{date:'2026-04-29', vals:[1400, 1100, 722, 1800, 200]}];
+let CFG = JSON.parse(localStorage.getItem('cf_v2.0')) || { target: 'QLD', threshold: 3.0 };
+let currentYear = 'ALL';
+let mainChart = null, pieChart = null;
+
+const fmt = n => Math.round(n).toLocaleString();
+const total = r => r.vals.reduce((a,b)=>a+b, 0);
+
+function initTabs() {
+  const container = document.getElementById('yearTabs');
+  ['2025','2026','2027','2028','2029','2030','2031','2032'].forEach(y => {
+    const btn = document.createElement('button'); btn.className = 'tab-btn'; btn.textContent = y;
+    btn.onclick = (e) => setYear(y, e.target); container.appendChild(btn);
+  });
+  document.getElementById('memo-area').value = localStorage.getItem('invest_memo') || "";
+  document.getElementById('cfg-threshold').value = CFG.threshold;
+}
+
+function setYear(year, btn) {
+  currentYear = year;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('view-year-label').textContent = year;
+  render();
+}
+
+function calculateRequiredYield(currentVal, goalVal, goalDate) {
+    const today = new Date();
+    const target = new Date(goalDate);
+    const yearsLeft = (target - today) / (1000 * 60 * 60 * 24 * 365.25);
+    if (yearsLeft <= 0) return 0;
+    return (Math.pow(goalVal / currentVal, 1 / yearsLeft) - 1) * 100;
+}
+
+function render() {
+  localStorage.setItem('tk_v2.0', JSON.stringify(TICKERS));
+  localStorage.setItem('rw_v2.0', JSON.stringify(ROWS));
+  localStorage.setItem('cf_v2.0', JSON.stringify(CFG));
+
+  const filteredReal = currentYear === 'ALL' ? ROWS : ROWS.filter(r => r.date.startsWith(currentYear));
+  const lastReal = ROWS.length > 0 ? ROWS[ROWS.length-1] : {vals:TICKERS.map(()=>0)};
+  const currentTotal = total(lastReal);
+  const finalGoal = GOAL_DATA[GOAL_DATA.length-1];
+
+  // 1. 목표 달성률 업데이트
+  if (ROWS.length > 0) {
+    const progress = (currentTotal / finalGoal.val) * 100;
+    const remaining = finalGoal.val - currentTotal;
+    const progressEl = document.getElementById('s-goal-progress');
+    progressEl.textContent = `${progress.toFixed(2)}%`;
+    progressEl.style.color = progress >= 100 ? 'var(--green)' : 'var(--accent)';
+    document.getElementById('s-goal-remain').textContent = remaining > 0 ? `목표까지 ${fmt(remaining)} 만원 남음` : "목표 달성! 🎉";
+  }
+
+  // 2. 리밸런싱 알림 로직 (수정됨)
+  const statusEl = document.getElementById('s-status');
+  const statusSubEl = document.getElementById('s-status-sub');
+  const targetIdx = TICKERS.indexOf(CFG.target);
+  
+  if (currentTotal > 0 && targetIdx >= 0) {
+    const currentP = (lastReal.vals[targetIdx] / currentTotal) * 100;
+    const lastRow = ROWS.length >= 2 ? ROWS[ROWS.length-2] : null;
+    const prevTotal = lastRow ? total(lastRow) : 0;
+    const prevP = (prevTotal > 0) ? (lastRow.vals[targetIdx] / prevTotal * 100) : currentP;
+    
+    // 이전 기록 대비 비중 변화가 설정한 임계치(Threshold) 이상인지 체크
+    const drift = Math.abs(currentP - prevP);
+    
+    if (drift >= CFG.threshold) {
+      statusEl.textContent = "NEED";
+      statusEl.style.color = "var(--red)";
+      statusSubEl.textContent = `${CFG.target} 비중 변동: ${drift.toFixed(1)}%p`;
+    } else {
+      statusEl.textContent = "NOT YET";
+      statusEl.style.color = "var(--green)";
+      statusSubEl.textContent = `${CFG.target} 현재 비중: ${currentP.toFixed(1)}%`;
+    }
+  }
+
+  // 3. 자산 변동 및 요약 데이터
+  if (ROWS.length >= 2) {
+    const prev = total(ROWS[ROWS.length-2]);
+    const diff = currentTotal - prev;
+    const rate = (diff / prev * 100).toFixed(2);
+    const el = document.getElementById('s-change-rate');
+    el.textContent = `${rate > 0 ? '+' : ''}${rate}%`;
+    el.style.color = diff >= 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('s-change-abs').textContent = `${fmt(diff)} 만원`;
+  }
+
+  const reqYield = calculateRequiredYield(currentTotal, finalGoal.val, finalGoal.date);
+  document.getElementById('s-req-yield').textContent = `${reqYield.toFixed(2)}%`;
+  document.getElementById('s-total').textContent = `${fmt(currentTotal)} 만원`;
+  document.getElementById('s-total-sub').textContent = currentYear === 'ALL' ? '현재 총 평가액' : `${currentYear}년 자산`;
+  document.getElementById('s-cashflow').textContent = `${fmt(currentTotal * 0.04 / 12)} 만원`;
+
+  // UI 요소 업데이트
+  document.getElementById('cfg-target').innerHTML = TICKERS.map(t => `<option value="${t}" ${t===CFG.target?'selected':''}>${t}</option>`).join('');
+  document.getElementById('ticker-list').innerHTML = TICKERS.map((t,i) => `<div style="background:var(--bg3); padding:4px 8px; border-radius:6px; font-size:11px; border:1px solid var(--border2); display:flex; gap:5px; align-items:center;">${t} <span onclick="removeTicker(${i})" style="cursor:pointer; color:var(--text3)">×</span></div>`).join('');
+  document.getElementById('table-head').innerHTML = `<tr><th>날짜</th>${TICKERS.map(t=>`<th>${t}</th>`).join('')}<th>합계</th><th></th></tr>`;
+  
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = '';
+  filteredReal.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${r.date}</td>` + 
+      TICKERS.map((_, ci) => `<td><input type="number" value="${r.vals[ci]}" onchange="editValue('${r.date}', ${ci}, this.value)"></td>`).join('') +
+      `<td style="color:var(--accent); font-weight:600">${fmt(total(r))}</td>
+       <td><button onclick="delRow('${r.date}')" style="background:none; border:none; color:var(--text3); cursor:pointer">×</button></td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('in-values').innerHTML = TICKERS.map(t => `<input type="number" id="nv-${t}" placeholder="${t}">`).join('');
+  updateCharts(filteredReal, lastReal);
+}
+
+function updateCharts(filteredReal, lastReal) {
+  const filteredGoals = currentYear === 'ALL' ? GOAL_DATA : GOAL_DATA.filter(d => d.date.startsWith(currentYear));
+  const allDates = Array.from(new Set([...filteredGoals.map(d=>d.date), ...filteredReal.map(d=>d.date)])).sort();
+  const realMap = {}; filteredReal.forEach(r => realMap[r.date] = total(r));
+  const goalMap = {}; filteredGoals.forEach(g => goalMap[g.date] = g.val);
+  
+  mainChart.data.labels = allDates;
+  mainChart.data.datasets[0].data = allDates.map(d => goalMap[d] ?? null);
+  mainChart.data.datasets[1].data = allDates.map(d => realMap[d] ?? null);
+  mainChart.update();
+
+  pieChart.data.labels = TICKERS;
+  pieChart.data.datasets[0].data = lastReal.vals;
+  pieChart.update();
+}
+
+function addTicker() {
+  const n = document.getElementById('new-ticker').value.toUpperCase().trim();
+  if(n && !TICKERS.includes(n)) { TICKERS.push(n); ROWS.forEach(r => r.vals.push(0)); render(); }
+}
+function removeTicker(i) { if(confirm('종목 삭제?')) { TICKERS.splice(i,1); ROWS.forEach(r=>r.vals.splice(i,1)); render(); } }
+function addRow() {
+  const d = document.getElementById('in-date').value; if(!d) return;
+  const v = TICKERS.map(t => parseFloat(document.getElementById('nv-'+t).value) || 0);
+  ROWS.push({date: d, vals: v}); ROWS.sort((a,b)=>a.date.localeCompare(b.date)); render();
+}
+function editValue(date, ci, v) { 
+  const idx = ROWS.findIndex(r => r.date === date);
+  if(idx !== -1) { ROWS[idx].vals[ci] = parseFloat(v) || 0; render(); }
+}
+function delRow(date) { if(confirm('삭제?')) { ROWS = ROWS.filter(r => r.date !== date); render(); } }
+function saveCfg() { 
+    CFG.target = document.getElementById('cfg-target').value; 
+    CFG.threshold = parseFloat(document.getElementById('cfg-threshold').value) || 3.0; 
+    render(); 
+}
+function saveMemo() { localStorage.setItem('invest_memo', document.getElementById('memo-area').value); }
+function resetData() { if(confirm('초기화?')) { localStorage.clear(); location.reload(); } }
+
+window.onload = () => {
+  initTabs();
+  const ctxM = document.getElementById('mainChart').getContext('2d');
+  mainChart = new Chart(ctxM, {
+    type: 'line',
+    data: { labels: [], datasets: [
+      { label: '목표', data: [], borderColor: '#f5a623', borderDash: [5,5], pointRadius: 0, fill: false, spanGaps: true },
+      { label: '실제', data: [], borderColor: '#4f8ef7', backgroundColor: 'rgba(79,142,247,0.1)', pointRadius: 4, fill: true, tension: 0.3, spanGaps: true }
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { 
+          ticks: { color: '#555870', maxRotation: 90, minRotation: 90, autoSkip: false,
+            callback: function(val, index) {
+              const d = this.getLabelForValue(val);
+              return (d && parseInt(d.split('-')[2]) <= 7) ? d.substring(0, 7) : null;
+            }
+          },
+          grid: { color: (ctx) => ctx.tick && ctx.tick.label ? 'rgba(255,255,255,0.08)' : 'transparent' }
+        },
+        y: { grid: { color: 'rgba(255,255,255,0.03)' } }
+      }
+    }
+  });
+
+  const ctxP = document.getElementById('pieChart').getContext('2d');
+  pieChart = new Chart(ctxP, {
+    type: 'doughnut',
+    data: { labels: TICKERS, datasets: [{ data: [], backgroundColor: ['#4f8ef7', '#3ecf8e', '#f5a623', '#f06e6e', '#8b8fa8', '#a78bfa'], borderWidth: 0 }]},
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '70%',
+      plugins: { legend: { position: 'bottom', labels: { color: '#8b8fa8', usePointStyle: true } } }
+    },
+    plugins: [{
+      id: 'textLabel',
+      afterDraw: (chart) => {
+        const { ctx, data } = chart; ctx.save();
+        chart.getDatasetMeta(0).data.forEach((dp, i) => {
+          const { x, y } = dp.tooltipPosition();
+          const totalV = data.datasets[0].data.reduce((a, b) => a + b, 0);
+          if (totalV > 0 && (data.datasets[0].data[i] / totalV * 100) > 3) {
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Pretendard'; ctx.textAlign = 'center';
+            ctx.fillText(`${data.labels[i]} ${((data.datasets[0].data[i]/totalV)*100).toFixed(1)}%`, x, y);
+          }
+        });
+        ctx.restore();
+      }
+    }]
+  });
+  render();
+
+  window.exportData = function() {
+    const data = { rows: ROWS, tickers: TICKERS, cfg: CFG, memo: localStorage.getItem('invest_memo') || "" };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `asset_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+window.addEventListener('load', function() {
+  const jsonUrl = 'data.json?v=' + Date.now(); // 캐시 방지
+
+  fetch(jsonUrl)
+    .then(response => {
+      if (!response.ok) throw new Error('네트워크 응답 에러');
+      return response.json();
+    })
+    .then(data => {
+      // 1. 데이터 검증
+      if (!data.rows || !data.tickers) {
+        console.error("JSON 형식이 맞지 않습니다:", data);
+        return;
+      }
+
+      const localData = localStorage.getItem('rw_v2.0');
+      const incomingDataStr = JSON.stringify(data.rows);
+
+      // 2. 데이터가 다르거나 없을 경우 업데이트
+      if (!localData || localData !== incomingDataStr) {
+        localStorage.setItem('rw_v2.0', incomingDataStr);
+        localStorage.setItem('tk_v2.0', JSON.stringify(data.tickers));
+        localStorage.setItem('cf_v2.0', JSON.stringify(data.cfg));
+        if (data.memo) localStorage.setItem('invest_memo', data.memo);
+
+        alert("새로운 데이터를 성공적으로 불러왔습니다! 화면을 갱신합니다.");
+        location.reload(); // 이 줄이 있어야 화면에 바로 반영됩니다.
+      }
+    })
+    .catch(err => {
+      console.error("데이터 로드 실패:", err);
+    });
+});
+  // --- 여기까지 새로 넣는 코드 끝 ---
+
+  window.importData = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (confirm('기존 데이터를 모두 지우고 백업 파일을 불러올까요?')) {
+          localStorage.setItem('rw_v2.0', JSON.stringify(data.rows));
+          localStorage.setItem('tk_v2.0', JSON.stringify(data.tickers));
+          localStorage.setItem('cf_v2.0', JSON.stringify(data.cfg));
+          if (data.memo) localStorage.setItem('invest_memo', data.memo);
+          location.reload();
+        }
+      } catch (err) { alert('파일 읽기 오류'); }
+    };
+    reader.readAsText(file);
+  };
+};
+
+// 1. 데이터 내보내기 (JSON 다운로드)
+function exportData() {
+    const dataObj = {
+        tickers: TICKERS,
+        rows: ROWS,
+        cfg: CFG,
+        memo: localStorage.getItem('invest_memo')
+    };
+    const blob = new Blob([JSON.stringify(dataObj, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dudu_asset_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// 2. 데이터 불러오기 (JSON 파일 읽기)
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            
+            // 데이터 구조 검증
+            if (!data.tickers || !data.rows) {
+                throw new Error("올바른 JSON 형식이 아닙니다.");
+            }
+
+            // 변수 업데이트 및 로컬 스토리지 저장
+            TICKERS = data.tickers;
+            ROWS = data.rows;
+            if (data.cfg) CFG = data.cfg;
+            if (data.memo) {
+                localStorage.setItem('invest_memo', data.memo);
+                document.getElementById('memo-area').value = data.memo;
+            }
+
+            alert("데이터를 성공적으로 불러왔습니다.");
+            render(); // 화면 즉시 갱신
+        } catch (err) {
+            alert("파일 읽기 오류: " + err.message);
+        }
+    };
+    reader.readAsText(file);
+}
+
+// 3. 종목(Ticker) 추가 기능 누락 수정
+function addTicker() {
+    const input = document.getElementById('new-ticker');
+    const ticker = input.value.toUpperCase().trim();
+    if (ticker && !TICKERS.includes(ticker)) {
+        TICKERS.push(ticker);
+        // 기존 기록들에 새 티커용 0값 추가
+        ROWS.forEach(r => r.vals.push(0));
+        input.value = '';
+        render();
+    }
+}
+
+// 4. 티커 리스트 렌더링 기능 추가 (render 함수 안에 포함되어야 함)
+// 이 부분은 기존 render() 함수 내부의 적절한 위치에 추가하거나, 
+// 아래와 같이 별도 함수로 빼서 render()에서 호출하게 수정하세요.
+function updateTickerListUI() {
+    const list = document.getElementById('ticker-list');
+    list.innerHTML = TICKERS.map(t => `
+        <span class="btn btn-ghost" style="display:flex; align-items:center; gap:8px;">
+            ${t}
+            <span onclick="removeTicker('${t}')" style="cursor:pointer; color:var(--red); font-weight:bold;">×</span>
+        </span>
+    `).join('');
+}
+
+function removeTicker(t) {
+    if (TICKERS.length <= 1) return alert("최소 한 개의 종목은 있어야 합니다.");
+    if (confirm(`${t} 종목을 삭제하시겠습니까? 관련 기록도 함께 삭제됩니다.`)) {
+        const idx = TICKERS.indexOf(t);
+        TICKERS.splice(idx, 1);
+        ROWS.forEach(r => r.vals.splice(idx, 1));
+        render();
+    }
+}
+
+// 기존 render 함수 마지막 줄에 updateTickerListUI(); 를 추가하세요.
+</script>
+</body>
+</html>
