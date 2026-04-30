@@ -227,7 +227,46 @@ let mainChart = null, pieChart = null;
 
 const fmt = n => Math.round(n).toLocaleString();
 const total = r => r.vals.reduce((a,b)=>a+b, 0);
+// 2. 초기화 함수 (서버의 data.json을 최우선으로 가져옴)
+async function init() {
+  const container = document.getElementById('yearTabs');
+  ['2025','2026','2027','2028','2029','2030','2031','2032'].forEach(y => {
+    const btn = document.createElement('button'); btn.className = 'tab-btn'; btn.textContent = y;
+    btn.onclick = (e) => setYear(y, e.target); container.appendChild(btn);
+  });
 
+  initCharts();
+
+  // 깃허브 서버에 있는 data.json 파일을 강제로 읽어옵니다.
+  try {
+    const response = await fetch('data.json?v=' + Date.now()); // 캐시 방지용 파라미터 추가
+    if (response.ok) {
+      const data = await response.json();
+      TICKERS = data.tickers || TICKERS;[cite: 1]
+      ROWS = data.rows || ROWS;[cite: 1]
+      CFG = data.cfg || CFG;[cite: 1]
+      if (data.memo) {
+          localStorage.setItem('invest_memo', data.memo);[cite: 1]
+          document.getElementById('memo-area').value = data.memo;[cite: 1]
+      }
+      console.log("깃허브 서버 데이터 로드 성공!");[cite: 1]
+    }
+  } catch (e) {
+    console.log("서버 파일 로드 실패, 로컬 기록을 사용합니다.");[cite: 1]
+    if(localStorage.getItem('rw_v2.0')) {
+        TICKERS = JSON.parse(localStorage.getItem('tk_v2.0'));[cite: 1]
+        ROWS = JSON.parse(localStorage.getItem('rw_v2.0'));[cite: 1]
+        CFG = JSON.parse(localStorage.getItem('cf_v2.0'));[cite: 1]
+    }
+  }
+
+  // 메모장 설정 (2026년 5월 1억 투입 등 계획 반영)
+  if(!document.getElementById('memo-area').value) {
+      document.getElementById('memo-area').value = localStorage.getItem('invest_memo') || "전략: DGRO 전량 VOO 교체 및 정기 매수\n일정: 2026년 5월 1억 원 추가 투입 예정";[cite: 1]
+  }
+  
+  render();[cite: 1]
+}
 function initTabs() {
   const container = document.getElementById('yearTabs');
   ['2025','2026','2027','2028','2029','2030','2031','2032'].forEach(y => {
