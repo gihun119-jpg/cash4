@@ -227,6 +227,7 @@ let mainChart = null, pieChart = null;
 
 const fmt = n => Math.round(n).toLocaleString();
 const total = r => r.vals.reduce((a,b)=>a+b, 0);
+  
 // 2. 초기화 함수 (서버의 data.json을 최우선으로 가져옴)
 async function init() {
   const container = document.getElementById('yearTabs');
@@ -267,15 +268,7 @@ async function init() {
   
   render();[cite: 1]
 }
-function initTabs() {
-  const container = document.getElementById('yearTabs');
-  ['2025','2026','2027','2028','2029','2030','2031','2032'].forEach(y => {
-    const btn = document.createElement('button'); btn.className = 'tab-btn'; btn.textContent = y;
-    btn.onclick = (e) => setYear(y, e.target); container.appendChild(btn);
-  });
-  document.getElementById('memo-area').value = localStorage.getItem('invest_memo') || "";
-  document.getElementById('cfg-threshold').value = CFG.threshold;
-}
+
 
 function setYear(year, btn) {
   currentYear = year;
